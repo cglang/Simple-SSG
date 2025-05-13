@@ -1,0 +1,8 @@
+{
+    "siteName": "Simple SSG",
+    "markdownDir": "./content",
+    "outputDir": "./output",
+    "templateFile": "./templates/post.html",
+    "indexTemplateFile": "./templates/index.html",
+    "archiveTemplateFile": "./templates/archive.html"
+}

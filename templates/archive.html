@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ archiveTitle }} - {{ siteName }}</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+        }
+
+        main {
+            flex-grow: 1;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        main ul li {
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        main ul li:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .article-list-item h3 {
+            margin-top: 0;
+            margin-bottom: 5px;
+        }
+
+        .article-list-item p {
+            margin-top: 0;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            color: #555;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1><a href="/index.html">{{ siteName }}</a></h1>
+    </header>
+    <main>
+        <h1>{{ archiveTitle }}</h1>
+        {{ articleListHtml }}
+    </main>
+    <footer>
+        <p>&copy; {{ siteName }}</p>
+    </footer>
+</body>
+
+</html>
