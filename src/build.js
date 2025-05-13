@@ -3,6 +3,79 @@ const { loadConfig } = require('./config');
 const { readDirRecursive, readFile, writeFile, ensureDir } = require('./fileUtils');
 const { processMarkdown } = require('./markdownProcessor');
 const { loadTemplate, applyTemplate } = require('./templateEngine');
+const { finished } = require('stream/promises');
+const { createWriteStream } = require('fs');
+const { SitemapStream } = require('sitemap');
+const RSS = require('rss');
+
+// 生成网站地图
+// Generate Sitemap
+async function generateSitemap(articleList, categoriesNames, tagsNames, config) {
+  console.log('Generating sitemap...');
+  const sitemapPath = path.join(config.outputDir, 'sitemap.xml');
+
+  const stream = new SitemapStream({ hostname: config.baseUrl });
+  const writeStream = createWriteStream(sitemapPath);
+
+  stream.pipe(writeStream);
+  stream.write({ url: '/', changefreq: 'daily', priority: 1.0 });
+
+  articleList.forEach(article => {
+    const articleUrl = article.url.replace('./', '/');
+    const lastmod = article.date ? new Date(article.date).toISOString() : undefined; // ISO 8601 格式
+    stream.write({ url: articleUrl, lastmod: lastmod, changefreq: 'weekly', priority: 0.8 });
+  });
+
+  categoriesNames.forEach(catName => {
+    const catSlug = slugify(catName);
+    stream.write({ url: `/category/${catSlug}/`, changefreq: 'weekly', priority: 0.6 });
+  });
+
+  tagsNames.forEach(tagName => {
+    const tagSlug = slugify(tagName);
+    stream.write({ url: `/tag/${tagSlug}/`, changefreq: 'weekly', priority: 0.6 });
+  });
+
+  stream.end();
+
+  await finished(stream);
+
+  console.log(`Sitemap generated: ${sitemapPath}`);
+}
+
+// 生成 RSS 订阅文件
+// Generate Rss Feed
+async function generateRssFeed(articleList, config) {
+  console.log('Generating RSS feed...');
+  const rssPath = path.join(config.outputDir, 'rss.xml');
+
+  const feed = new RSS({
+    title: config.siteName,
+    description: config.siteDescription,
+    feed_url: `${config.baseUrl}/rss.xml`,
+    site_url: config.baseUrl,
+    language: 'en',
+    pubDate: new Date(),
+    ttl: '60'
+  });
+
+  articleList.forEach(article => {
+    const pubDate = article.date ? new Date(article.date).toUTCString() : undefined;
+
+    feed.item({
+      title: article.title,
+      description: article.html,
+      url: `${config.baseUrl}${article.url.replace('./', '/')}`,
+      guid: `${config.baseUrl}${article.url.replace('./', '/')}`,
+      date: pubDate
+    });
+  });
+
+  const rssXml = feed.xml({ indent: true }); // { indent: true } 用于格式化输出，方便阅读
+  await writeFile(rssPath, rssXml);
+  console.log(`RSS feed generated: ${rssPath}`);
+}
+
 
 // 用于创建友好的 URL 的辅助函数
 // Helper function to create URL-friendly slugs
@@ -103,6 +176,7 @@ async function generatePostPage(mdFilePath, config, postTemplate, articleList) {
       description: data.description || '',
       category: data.category || '',
       tags: data.tags && Array.isArray(data.tags) ? data.tags : [],
+      html: html
     };
     articleList.push(articleData);
 
@@ -251,6 +325,22 @@ async function build() {
 
   for (const tagName of Array.from(tagsNames)) {
     await generateArchivePage('tag', tagName, articleList, config, archiveTemplate);
+  }
+
+  // 6. 生成网站地图
+  // 6. Generate Sitemap
+  if (articleList.length > 0) {
+    await generateSitemap(articleList, categoriesNames, tagsNames, config);
+  } else {
+    console.log("No content found, skipping sitemap generation.");
+  }
+
+  // 7. 生成 RSS 订阅文件
+  // 7. Generate RSS Feed
+  if (articleList.length > 0) {
+    await generateRssFeed(articleList, config);
+  } else {
+    console.log("No articles found, skipping RSS feed generation.");
   }
 
   console.log('Site build finished successfully!');

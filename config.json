@@ -1,5 +1,7 @@
 {
     "siteName": "Simple SSG",
+    "siteDescription": "Description",
+    "baseUrl": "https://yourwebsite.com",
     "markdownDir": "./content",
     "outputDir": "./output",
     "templateFile": "./templates/post.html",
